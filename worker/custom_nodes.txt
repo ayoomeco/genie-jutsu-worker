@@ -1,0 +1,46 @@
+# Pinned custom nodes for the jutsu-worker (Oct 7 2026; same set installed on the box's CPU ComfyUI v0.39.1 used for the
+# offline UI->API conversion and the object_info snapshot).
+#
+# Two line formats:
+#   <git repo url>  <commit>                         -> git clone + checkout
+#   <zip url>       <sha256>  <dir name>             -> download, verify sha256, unzip into custom_nodes/<dir name>
+# Zip entries exist because the Saganaki22 packs (Viggle-Animate, HyperFlow) are no longer public on GitHub; they are
+# published on the Comfy Registry (CDN zips, pinned by version + sha256). The X2 Detail VAE node ships inside its HF repo.
+#
+# NATIVE in ComfyUI >= 0.39 (comfy-core, no custom node): MiniMax H3 (Ref2VA, Fun ControlNet Union 2.0, SigmaShift,
+# LynnReal light VAE), SCAIL-2, Wan-Animate-2, SAM 3 / 3.1, SeedVR2 (v0.38 rewrite), ID-V2V, Model/Block Sparse Attention,
+https://github.com/kijai/ComfyUI-KJNodes                      d3cfe21625e5170126ce06fbfcfe1d88108688c3
+https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite       4d907bee61e92c2e65af3bd6383a4e4d356126d1
+https://github.com/xmarre/ComfyUI-Spectrum-MiniMax-H3          5161f0457bc8c52535212d6783eee73f439e1537
+https://github.com/Lightricks/ComfyUI-LTXVideo                 3bf3ca62595f1764c47d01c35c8e5dfe47e1a88f
+https://github.com/rgthree/rgthree-comfy                       d7297b42f0fa78bec1c0411478f887423c249502
+https://github.com/ClownsharkBatwing/RES4LYF                   56e44755d866c87ff9cb4b6608c8e42155db6ecc
+https://github.com/filliptm/ComfyUI_Fill-Nodes                 a32f9b6a5a55528731d9e6c38a2fd2ce89cb2819
+https://github.com/Fannovel16/comfyui_controlnet_aux           0cd290477128d42cdc3e76a826a402d866e8c684
+https://github.com/yuvraj108c/ComfyUI-Video-Depth-Anything     a0db08e63d1ea571601c45cde4aaee0acdd0544d
+# Veda learned sparse attention for H3 (optional; Triton INT8 kernels verified on sm120 = 5090 / PRO 6000 only)
+https://github.com/veda-sparse/Veda-on-ComfyUI                 60bfae688897dc41bc8685ca9f3130d7ed8f3b0c
+# Viggle-Animate person swap (primary swap engine) - Comfy Registry comfyui-viggle-animate-h3 v1.3.2
+https://cdn.comfy.org/saganaki22/comfyui-viggle-animate-h3/1.3.2/node.zip  6d7c203ed76141e7030eaf2940e02a45251ebc88992fb7c7ab2ea3ea501ddd95  comfyui-viggle-animate-h3
+# HyperFlow 8-step H3 (two-time conditioning node) - Comfy Registry comfyui-hyperflow v1.3.1
+https://cdn.comfy.org/saganaki22/comfyui-hyperflow/1.3.1/node.zip          7e70c65cf75b27ef31e332b14cf7fa2d75b9456aff0c0811a368621788f211e6  comfyui-hyperflow
+# H3 X2 Detail VAE decode (2x output: 544x960 -> 1088x1920) - node zip inside the HF model repo, pinned to HF commit af8c92d
+https://huggingface.co/speach1sdef178/MiniMax-H3-X2-Detail-VAE/resolve/af8c92d267c6849fec5032c35a65d5766737b338/custom_node/ComfyUI-H3-X2-Detailed.zip  e240b96c0ed3cd000292ac1cab3d721ef796a17cbc6c2558f5829cef6b05878d  ComfyUI-H3-X2-Detailed
+# FlashVSR v1.1 bulk upscaler (SeedVR2 stays for hero shots); models in ComfyUI/models/FlashVSR-v1.1 (start.sh symlinks)
+https://github.com/lihaoyun6/ComfyUI-FlashVSR_Ultra_Fast       4820b3f02347bddcbbb9a5a85ab7638fe976366e
+# PDD Acc node pack (Oct 7 review): MiniMaxH3PDDAccApply emits the TRAINED block-boundary sigmas and allows nfe 4/6/8.
+# Core #15908 also loads Kijai's *_pruned_comfy PDD files via LoraLoaderModelOnly (valid at simple/8/shift 12/3), but the
+# recipes standardise on the pack; tests fail if a PDD file is wired into a plain LoRA loader. Weights: models/pdd_acc.
+https://github.com/Jalen-Brunson/ComfyUI-MiniMax-H3-PDD-Acc    311a65dd53832d8a5f8177a9d5fb923c09e35a90
+# Ref2VA VSA (learned block-sparse gate, experimental speed rung; int8 trunk + sol_attn only). Gate in models/loras.
+https://github.com/Kablex/ComfyUI-Ref2VA-VSA                   1b370329b1740a6cdf5d5df4707da6ba5ed777b6
+# MiniMax H3 TeaCache (MIT, Oct 8 inpaint round rung fixH_super_db20_tea): whole-forward reuse, rel_l1 0.15, start 2 / end -2
+https://github.com/Icyoung/ComfyUI-MiniMaxH3-TeaCache          4cbb50d69c73a19a5d6ec42c5aec1989d5a04b6f
+# Oct 13 better build: nuvulabs H3 inpaint latent (plate + soft mask -> AV latent)
+https://github.com/nuvulabs/ComfyUI-MiniMaxH3-Inpaint            e8fe2339667e18ecf4ebac4d5b3b026761dbe439
+# ---- Universal routes (Oct 14 2026): MoCha + Wan2.2-Animate replace live in Kijai's wrapper. PIN a commit before baking
+# Pinned Oct 14 2026 after loading cleanly on the box CPU ComfyUI 0.39.1 (MochaEmbeds, WanVideoAnimateEmbeds, Omnichar* present).
+https://github.com/kijai/ComfyUI-WanVideoWrapper              088128b224242e110d3906c6750e9a3a348a659b
+https://github.com/omnichar/ComfyUI-Omnichar                  251c02e1fea44d7564d05a518dbe9fc5c9cf07e3
+# NOT installed: kijai/ComfyUI-segment-anything-2 0c35fff (its nodes break the frontend graphToPrompt: DataCloneError);
+# universal graphs take box-side SAM2.1 mask videos instead of the interactive point editor.

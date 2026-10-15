@@ -1,0 +1,22 @@
+# Models live on the network volume, never in the image. MODEL_ROOT is resolved by start.sh
+# (/workspace on Pods, /runpod-volume on Serverless) and symlinked to /models.
+jutsu_volume:
+  base_path: /models
+  is_default: true
+  checkpoints: checkpoints
+  diffusion_models: |
+    diffusion_models
+    unet
+  text_encoders: |
+    text_encoders
+    clip
+  clip_vision: clip_vision
+  vae: vae
+  loras: loras
+  model_patches: model_patches
+  latent_upscale_models: latent_upscale_models
+  upscale_models: upscale_models
+  text_cond: text_cond            # Viggle-Animate frozen 362-token text embedding (no text encoder)
+  hyperflow: hyperflow            # HyperFlow 8-step node weights (ComfyUI-Hyperflow)
+  veda: veda                      # Veda sparse-attention predictor (275 MB)
+  pdd_acc: pdd_acc                # PDD Acc trunk-LoRA + head bank (ComfyUI-MiniMax-H3-PDD-Acc)
