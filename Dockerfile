@@ -7,7 +7,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends git git-lfs ffm
       python3.12 python3.12-venv python3.12-dev build-essential ninja-build curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY worker/ /opt/jutsu-src/
-RUN PREFIX=/opt/jutsu bash /opt/jutsu-src/install.sh && rm -rf /root/.cache /tmp/* \
+# install.sh compiles SageAttention with MAX_JOBS=8 for sm_89 and sm_120 when nvcc
+# is on PATH. That OOM-kills GitHub-hosted runners (shutdown signal mid-compile).
+# Hiding nvcc uses the script's supported skip; ComfyUI falls back to PyTorch SDPA.
+# Volume installs still compile SageAttention because they call install.sh directly.
+RUN nvcc_path="$(command -v nvcc || true)"; \
+    if [ -n "$nvcc_path" ]; then mv "$nvcc_path" /tmp/nvcc.real; fi; \
+    PREFIX=/opt/jutsu bash /opt/jutsu-src/install.sh && rm -rf /root/.cache /tmp/* \
     && find /opt/jutsu -name '__pycache__' -prune -exec rm -rf {} + \
     && chmod +x /opt/jutsu-src/*.sh
 EXPOSE 8188
