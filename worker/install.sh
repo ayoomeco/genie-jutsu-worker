@@ -41,11 +41,29 @@ grep -vE '^\s*(#|$)' "$HERE/custom_nodes.txt" | while read -r url pin dir; do
     git -C "$d" fetch --depth 1 origin "$pin" 2>/dev/null || true
     git -C "$d" checkout -q "$pin" || echo "[install] WARN could not pin $(basename "$url") to $pin"
   fi
-  [ -f "$d/requirements.txt" ] && $PIP -r "$d/requirements.txt" || true
+  # uv resolves a requirements file all-or-nothing: one unbuildable line (sam2 git, groundingdino) dropped the whole pack's
+  # deps before. Fall back to line-by-line so everything installable is baked in.
+  if [ -f "$d/requirements.txt" ]; then
+    $PIP -r "$d/requirements.txt" || grep -vE '^\s*(#|$)' "$d/requirements.txt" | while read -r req; do $PIP "$req" || echo "[install] WARN $(basename "$d"): $req"; done
+  fi
 done
+# Pre-baked runtime deps the packs otherwise pip-install on first use (Oct 16: LatentSyncNode died with "Failed to install
+# required package: pytorch_lightning" -- uv venvs have no pip module, and it probes 'ffmpeg-python' by dist name, so it
+# ALWAYS tried). pip itself is added so any remaining `python -m pip` fallback works.
+PACK_DEPS="pip pytorch_lightning accelerate omegaconf einops diffusers transformers huggingface_hub ffmpeg-python
+  face-alignment decord DeepCache soundfile mediapipe librosa ultralytics insightface scenedetect scipy onnxruntime-gpu
+  segment-anything scikit-image piexif dill matplotlib transparent-background hydra-core iopath ftfy"
+retry $PIP $PACK_DEPS || for req in $PACK_DEPS; do $PIP "$req" || echo "[install] WARN pack dep $req"; done
+$PIP "git+https://github.com/facebookresearch/sam2" || echo "[install] WARN sam2 (Impact SAM2 loader) not built; SAM v1 path still works"
+touch /root/.latentsync16_dependencies_installed
+"$PREFIX/venv/bin/python" -c "import pytorch_lightning, accelerate, ffmpeg, face_alignment, decord, ultralytics, insightface, scenedetect, segment_anything, transparent_background; print('[install] pack deps import OK')" \
+  || echo "[install] WARN a pack dependency failed to import (see above)"
 # SageAttention 2.2.0 (2x attention on Blackwell; KJ PathchSageAttentionKJ / --use-sage-attention). Needs nvcc, not a GPU.
 # Uses $PIP (uv venvs have no pip module: `python -m pip` failed on the first Phase-1 pod).
-if command -v nvcc >/dev/null 2>&1; then
+# Kept OUT of the CI image (Oct 15: the SageAttention CUDA build crashed the GitHub runner). Opt in with JUTSU_BUILD_SAGE=1.
+if [ "${JUTSU_BUILD_SAGE:-0}" != 1 ]; then
+  echo "[install] SageAttention skipped (JUTSU_BUILD_SAGE!=1): SDPA"
+elif command -v nvcc >/dev/null 2>&1; then
   ( tmp=$(mktemp -d) && git clone --depth 1 --branch "$SAGE_REF" https://github.com/thu-ml/SageAttention.git "$tmp/sage" \
     && cd "$tmp/sage" && $PIP setuptools wheel ninja packaging \
     && EXT_PARALLEL=4 NVCC_APPEND_FLAGS="--threads 8" MAX_JOBS=8 $PIP --no-build-isolation . ) \

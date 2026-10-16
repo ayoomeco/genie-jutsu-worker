@@ -3,6 +3,8 @@
 # Optional dead-man switch: JUTSU_MAX_SECONDS=N terminates THIS pod after N seconds using the pod-scoped
 # RUNPOD_API_KEY that RunPod injects into every pod (no user key ever leaves the box).
 set -euo pipefail
+# LatentSyncWrapper skips its runtime pip step when this flag exists (deps are baked by install.sh)
+touch "$HOME/.latentsync16_dependencies_installed" 2>/dev/null || true
 for root in "${MODEL_ROOT:-}" /runpod-volume /workspace; do
   if [ -n "$root" ] && [ -d "$root/models" ]; then MODEL_ROOT=$root; break; fi
 done
@@ -32,5 +34,9 @@ if [ "${JUTSU_GLOBAL_SAGE:-0}" = 1 ]; then "$JUTSU/venv/bin/python" -c "import s
 # FlashVSR node reads ComfyUI/models/FlashVSR-v1.1 directly (ignores extra_model_paths) and calls snapshot_download when that
 # dir is missing. Phase 1: ComfyUI started before the background download created it -> no link -> HF 429. Link ALWAYS.
 mkdir -p /models/FlashVSR-v1.1 && ln -sfn /models/FlashVSR-v1.1 "$JUTSU/ComfyUI/models/FlashVSR-v1.1" || true
+# Round 3 packs read fixed dirs under ComfyUI/models or their own checkpoints dir (not extra_model_paths): link them to the volume.
+for d in ultralytics sams; do mkdir -p "/models/$d" && { [ -L "$JUTSU/ComfyUI/models/$d" ] || rm -rf "$JUTSU/ComfyUI/models/$d"; } && ln -sfn "/models/$d" "$JUTSU/ComfyUI/models/$d" || true; done
+LS="$JUTSU/ComfyUI/custom_nodes/ComfyUI-LatentSyncWrapper"
+[ -d "$LS" ] && mkdir -p /models/latentsync && rm -rf "$LS/checkpoints" && ln -sfn /models/latentsync "$LS/checkpoints" || true
 cd "$JUTSU/ComfyUI"
 exec "$JUTSU/venv/bin/python" main.py "${FLAGS[@]}"

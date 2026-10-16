@@ -44,3 +44,14 @@ https://github.com/kijai/ComfyUI-WanVideoWrapper              088128b224242e110d
 https://github.com/omnichar/ComfyUI-Omnichar                  251c02e1fea44d7564d05a518dbe9fc5c9cf07e3
 # NOT installed: kijai/ComfyUI-segment-anything-2 0c35fff (its nodes break the frontend graphToPrompt: DataCloneError);
 # universal graphs take box-side SAM2.1 mask videos instead of the interactive point editor.
+# ---- Round 3 free upgrades (Oct 15 2026). All 6 load cleanly on the box CPU ComfyUI v0.39.1 (the pinned COMFY_REF) and 0.41.0.
+# H3-FaceRefine (MIT): face track/crop -> H3 re-render -> stitch back. Detector: models/ultralytics/bbox/face_yolov8m.pt (start.sh link)
+https://github.com/Carasibana/ComfyUI-H3-FaceRefine            d8521d14fe0d721d80cd9417fff5a559cbc21aba
+# Impact Pack: SAMLoader for H3FaceMaskSAM (FaceRefine SAM variant); sam_vit_b in models/sams (start.sh link)
+https://github.com/ltdrdata/ComfyUI-Impact-Pack                 429d0159ad429e64d2b3916e6e7be9c22d025c3c
+# Alissonerdx BFS nodes: BFSShotPlanner / BFSShotH3ConditioningSimple (with_audio) / BFSShotJoin for the author's character-swap graph
+https://github.com/alisson-anjos/ComfyUI-BFSNodes               06c75bb85ea2eb81b24575af27db70aec9ab160b
+# RMBG pack: BiRefNetRMBG (reference cut-out in the BFS graph; BiRefNet-general auto-downloads 0.88 GB on first use)
+https://github.com/1038lab/ComfyUI-RMBG                         229529e0ea63fb7085848225d74f91f6dc164956
+# LatentSync 1.6 wrapper (LatentSyncNode); weights in /models/latentsync (start.sh links the pack's checkpoints dir)
+https://github.com/ShmuelRonen/ComfyUI-LatentSyncWrapper        360d5283d7276aee68b4237b1387e594e4ce640e
