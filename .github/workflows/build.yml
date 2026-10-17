@@ -27,3 +27,45 @@ jobs:
           provenance: false
       - name: Image size
         run: docker buildx imagetools inspect ghcr.io/${{ github.repository_owner }}/genie-jutsu-worker:latest || true
+      - name: Verify LatentSync patch
+        run: |
+          IMG="ghcr.io/${{ github.repository_owner }}/genie-jutsu-worker:v1-${{ github.sha }}"
+          n=0
+          until docker pull "$IMG"; do
+            n=$((n+1))
+            if [ "$n" -ge 5 ]; then
+              echo "docker pull failed after ${n} attempts"
+              exit 1
+            fi
+            sleep 15
+          done
+          docker run --rm -i --network none -w /tmp \
+            --entrypoint /opt/jutsu/venv/bin/python "$IMG" - <<'PY'
+          import importlib.util, pathlib, sys, torch
+          sys.path.insert(0, "/opt/jutsu/ComfyUI")
+          pack = pathlib.Path("/opt/jutsu/ComfyUI/custom_nodes/ComfyUI-LatentSyncWrapper")
+          nodes_src = (pack / "nodes.py").read_text()
+          pipe_src = (pack / "latentsync/pipelines/lipsync_pipeline.py").read_text()
+          assert "# JUTSU_PATCH_v1" in nodes_src, "nodes.py missing soundfile patch"
+          assert "# JUTSU_NOLOOP_v1" in pipe_src, "lipsync_pipeline.py missing no-loop guard"
+          assert "torchaudio.save(" not in nodes_src
+          assert "io.write_video(" not in nodes_src
+          assert "io.read_video(" not in nodes_src
+          spec = importlib.util.spec_from_file_location("latentsync_nodes", pack / "nodes.py")
+          nodes = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(nodes)
+          assert "LatentSyncNode" in nodes.NODE_CLASS_MAPPINGS
+          wave = torch.linspace(-0.75, 0.75, 16000).unsqueeze(0)
+          out = "/tmp/ls16.wav"
+          nodes._jutsu_save_wav(out, wave, 16000)
+          import soundfile as sf
+          info = sf.info(out)
+          assert info.subtype == "PCM_16", info.subtype
+          assert info.samplerate == 16000, info.samplerate
+          assert info.channels == 1, info.channels
+          reloaded, sr = nodes._jutsu_load_wav(out)
+          assert sr == 16000, sr
+          assert tuple(reloaded.shape)[-1] == 16000, tuple(reloaded.shape)
+          assert float(reloaded.abs().max()) <= 1.0
+          print("[ls-verify] PASS import + 16kHz PCM_16 roundtrip", tuple(reloaded.shape), sr, info.subtype)
+          PY

@@ -56,6 +56,12 @@ PACK_DEPS="pip pytorch_lightning accelerate omegaconf einops diffusers transform
 retry $PIP $PACK_DEPS || for req in $PACK_DEPS; do $PIP "$req" || echo "[install] WARN pack dep $req"; done
 $PIP "git+https://github.com/facebookresearch/sam2" || echo "[install] WARN sam2 (Impact SAM2 loader) not built; SAM v1 path still works"
 touch /root/.latentsync16_dependencies_installed
+# Oct 16: torchaudio>=2.9 save() needs TorchCodec ("TorchCodec is required for save_with_torchcodec") and torchvision 0.28 has no
+# io.write_video/read_video. Patch LatentSyncWrapper to soundfile (PCM_16) + imageio-ffmpeg; pinned IO deps. Build fails if it can't patch.
+retry $PIP "soundfile==0.13.1" "imageio==2.37.0" "imageio-ffmpeg==0.6.0" "decord==0.6.0"
+LSW="$PREFIX/ComfyUI/custom_nodes/ComfyUI-LatentSyncWrapper"
+LSP="$HERE/latentsync_audio_patch.py"; [ -f "$LSP" ] || LSP="$HERE/patches/latentsync_audio_patch.py"
+if [ -d "$LSW" ]; then "$PREFIX/venv/bin/python" "$LSP" "$LSW" || { echo "[install] FATAL LatentSync audio patch failed"; exit 1; }; fi
 "$PREFIX/venv/bin/python" -c "import pytorch_lightning, accelerate, ffmpeg, face_alignment, decord, ultralytics, insightface, scenedetect, segment_anything, transparent_background; print('[install] pack deps import OK')" \
   || echo "[install] WARN a pack dependency failed to import (see above)"
 # SageAttention 2.2.0 (2x attention on Blackwell; KJ PathchSageAttentionKJ / --use-sage-attention). Needs nvcc, not a GPU.

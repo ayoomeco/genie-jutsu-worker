@@ -3,7 +3,7 @@
 FROM runpod/base:1.4.0-cuda1300-ubuntu2404
 ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1 HF_HUB_ENABLE_HF_TRANSFER=1 JUTSU_PREFIX=/opt/jutsu \
     TORCH_CUDA_ARCH_LIST="8.9;12.0" PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-RUN apt-get update && apt-get install -y --no-install-recommends git git-lfs ffmpeg libgl1 libglib2.0-0 \
+RUN apt-get update && apt-get install -y --no-install-recommends git git-lfs ffmpeg libgl1 libglib2.0-0 libsndfile1 \
       python3.12 python3.12-venv python3.12-dev build-essential ninja-build curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY worker/ /opt/jutsu-src/
